@@ -21,28 +21,27 @@ boolean RFM69::init433(unsigned char PinNSS, unsigned char PinDIO0)
 
 	setModeStdby();
 	//set DAGC continuous automatic gain control)
-	//writeSPI(RFM69_REG_6F_TESTDAGC, RFM69_TESTDAGC_CONTINUOUSDAGC_IMPROVED_LOWBETAOFF);
+	writeSPI(RFM69_REG_6F_TESTDAGC, RFM69_TESTDAGC_CONTINUOUSDAGC_IMPROVED_LOWBETAON); // between on and off the is a small improve
 
 	//RFM69_REG_02_DATAMODUL RFM69_DATAMODUL_DATAMODE_CONT_WITH_SYNC RFM69_DATAMODUL_MODULATIONTYPE_OOK 0x08
 
-	//Channel Filter?? RxBw
-
 	//set LNA by AGC and 200 Ohm 0x8 / 0x00 50 Ohm
-	writeSPI(RFM69_REG_18_LNA, 0x08);
+	writeSPI(RFM69_REG_18_LNA, 0);
 
 	setFrequency(433.92);
 	//setModulation(OOK);
 	//writeSPI(RFM69_REG_02_DATAMODUL, RFM69_DATAMODUL_DATAMODE_CONT_WITH_SYNC | RFM69_DATAMODUL_MODULATIONTYPE_OOK);
 	writeSPI(RFM69_REG_02_DATAMODUL, RFM69_DATAMODUL_DATAMODE_PACKET | RFM69_DATAMODUL_MODULATIONTYPE_OOK);
 	setBitRate(2048); // sampling rate for RSSI
+	//BW in OOK 15.6 kHz (found by try and error 2x BR was detecting all sensors); 4% DCC
+	writeSPI(RFM69_REG_19_RXBW, RFM69_RXBW_MANT_16 | RFM69_RXBW_EXP_4 | RFM69_RXBW_DCCFREQ_010 ); 
 
 	/*set sync words 	*/
 
-	unsigned char SyncBytes[] = {0xAA, 0xA6, 0x65, 0x66}; // does this fit to raw?
+	unsigned char SyncBytes[] = {0xAA, 0xA6, 0x65, 0x66}; // that is the header and the 0x45 = sensortype ID = F007TH in manchester encoding
 	setSyncWords(SyncBytes, sizeof(SyncBytes));
 	useSyncWords(true);
 
-	//writeSPI(RFM69_REG_38_PAYLOADLENGTH, 0);	// unlimited
 	writeSPI(RFM69_REG_38_PAYLOADLENGTH, FixPktSize);
 	writeSPI(RFM69_REG_37_PACKETCONFIG1, RFM69_PACKETCONFIG1_DCFREE_MANCHESTER); // fixed length, noCRC, no address filter 0x4 to set interrupt without CRC???
 	//writeSPI(RFM69_REG_37_PACKETCONFIG1, 0);
@@ -268,31 +267,20 @@ void RFM69::printRegister(unsigned char Reg)
 	Serial.println(readSPI(Reg), HEX);
 }
 
-unsigned char RFM69::rxMsg()
+unsigned char RFM69::rxMsg()  //return number of received bytes or 0
 {
 	setModeRx();
 	//if(digitalRead(_PinDIO0)) {
 	if (readSPI(RFM69_REG_28_IRQFLAGS2) & RFM69_IRQFLAGS2_PAYLOADREADY)
 	//if (readSPI(RFM69_REG_28_IRQFLAGS2) & RFM69_IRQFLAGS2_FIFOLEVEL)
 	{
+		_RSSILast = readSPI(RFM69_REG_24_RSSIVALUE);
 		setModeStdby();
 		//Serial.println("rxMsg1");
 
-		digitalWrite(_PinNSS, LOW);
-		SPI.transfer(RFM69_REG_00_FIFO); //send the start address with the write mask off
-
-		unsigned char cnt = 0;
-
-		//while (((readSPI(RFM69_REG_28_IRQFLAGS2) & RFM69_IRQFLAGS2_FIFONOTEMPTY)) && (cnt < 100))
-		for (cnt = 0; cnt < FixPktSize; cnt++)
-		{
-			_RxBuffer[cnt] = SPI.transfer(0);
-			//cnt++;
-			//Serial.println(cnt);
-		}
-
-		digitalWrite(_PinNSS, HIGH);
-		return (cnt);
+		readFifo(_RxBuffer,FixPktSize);
+		
+		return (FixPktSize);
 	}
 	else
 		return (0);

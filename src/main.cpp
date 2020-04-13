@@ -82,7 +82,9 @@ void loop()
     Serial.print ((chTemp -720) * 0.0556);
     Serial.print(":");
     byte hum = rfm69._RxBuffer[3];
-    Serial.println(hum);
+    Serial.print(hum);
+    Serial.print(":");
+    Serial.println(rfm69.getLastRSSI());
     
   }
 

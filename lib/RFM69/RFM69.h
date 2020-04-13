@@ -249,6 +249,29 @@ The commercial use of this code is not allowed.
 #define RFM69_BROADCAST_ADDRESS 0xff
 #define RFM69_MAX_MESSAGE_LEN (RFM69_MAX_ENCRYPTABLE_PAYLOAD_LEN - RFM69_HEADER_LEN)
 
+// RegRxBw
+#define RFM69_RXBW_DCCFREQ_000           0x00
+#define RFM69_RXBW_DCCFREQ_001           0x20
+#define RFM69_RXBW_DCCFREQ_010           0x40  // Recommended default
+#define RFM69_RXBW_DCCFREQ_011           0x60
+#define RFM69_RXBW_DCCFREQ_100           0x80  // Reset value
+#define RFM69_RXBW_DCCFREQ_101           0xA0
+#define RFM69_RXBW_DCCFREQ_110           0xC0
+#define RFM69_RXBW_DCCFREQ_111           0xE0
+
+#define RFM69_RXBW_MANT_16               0x00  // Reset value
+#define RFM69_RXBW_MANT_20               0x08
+#define RFM69_RXBW_MANT_24               0x10  // Recommended default
+
+#define RFM69_RXBW_EXP_0                 0x00
+#define RFM69_RXBW_EXP_1                 0x01
+#define RFM69_RXBW_EXP_2                 0x02
+#define RFM69_RXBW_EXP_3                 0x03
+#define RFM69_RXBW_EXP_4                 0x04
+#define RFM69_RXBW_EXP_5                 0x05  // Recommended default
+#define RFM69_RXBW_EXP_6                 0x06  // Reset value
+#define RFM69_RXBW_EXP_7                 0x07
+
 // The crystal oscillator frequency of the RF69 module
 #define RFM69_FXOSC 32000000.
 
@@ -282,10 +305,7 @@ enum mode
 	rfm69RX
 };
 
-static const unsigned char LenOk = 0x1;
-static const unsigned char LenErr = 0x2;
-static const unsigned char DecErr = 0x4;
-static const unsigned char CRCErr = 0x8;
+
 
 class RFM69
 {
